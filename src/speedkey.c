@@ -26,6 +26,7 @@
 #include <getopt.h>
 
 #include "sha1.h"
+#include "config.h"
 
 #define SERIAL_LENGTH 12
 #define SHA1_DIGEST_BITS 160
@@ -101,11 +102,12 @@ main (int argc , char * const argv[]) {
 	struct option longopts[] = {
 		{ "threads", required_argument, NULL, 't' },
 		{ "help",    no_argument,       NULL, 'h' },
+		{ "version", no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 },
 	};
 
 	size_t max_threads = 2;
-	while ( (c = getopt_long(argc, argv, "ht:", longopts, NULL)) != -1 ) {
+	while ( (c = getopt_long(argc, argv, "hvt:", longopts, NULL)) != -1 ) {
 		switch (c) {
 			case 't':
 				max_threads = (size_t) atoi(optarg);
@@ -114,9 +116,15 @@ main (int argc , char * const argv[]) {
 			case 'h':
 				printf("Usage: [OPTION]... SSID\n");
 				printf("Where OPTION is one of:\n");
-				printf("   --help, -h          print this help message\n");
+				printf("   --version,   -v     show the program's version\n");
+				printf("   --help,      -h     print this help message\n");
 				printf("   --threads T, -t T   number of threads to use\n");
 				return 1;
+			break;
+
+			case 'v':
+				printf("%s version %s\n", PACKAGE_NAME, PACKAGE_VERSION);
+				return 0;
 			break;
 		}
 	}
