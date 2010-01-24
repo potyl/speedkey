@@ -1,0 +1,7 @@
+SpeedTouch WEP key finder
+===================================
+
+This program computes the default factory WEP key of a SpeedTouch modem based
+on the key displayed in the SSID.
+
+Project homepage: http://github.com/potyl/speed-key
