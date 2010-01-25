@@ -106,7 +106,7 @@ main (int argc , char * const argv[]) {
 		{ NULL, 0, NULL, 0 },
 	};
 
-	size_t max_threads = 2;
+	size_t max_threads = 1;
 	while ( (c = getopt_long(argc, argv, "hvt:", longopts, NULL)) != -1 ) {
 		switch (c) {
 			case 't':
