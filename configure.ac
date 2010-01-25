@@ -9,12 +9,10 @@ AC_CONFIG_HEADERS([config.h])
 
 AM_MAINTAINER_MODE
 AC_PROG_CC
-
-AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-# make sure we keep ACLOCAL_FLAGS around for maintainer builds to work
+# Make sure we keep ACLOCAL_FLAGS around for maintainer builds to work
 AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 
 AC_CONFIG_FILES([Makefile src/Makefile])
