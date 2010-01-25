@@ -1,3 +1,8 @@
+0.0.3 Mon Jan 25 22:29:54 CET 2010
+	- Issue 1 - Add pthreads as a dependency.
+	- Issue 2 - Run a single thread by default.
+	- Add sha1.h to the dist bundle.
+
 0.0.2 Sun Jan 24 20:47:09 CET 2010
 	- Port to autotools.
 
