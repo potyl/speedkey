@@ -5,3 +5,38 @@ This program computes the default factory WEP key of a SpeedTouch modem based
 on the key displayed in the SSID.
 
 Project homepage: http://github.com/potyl/speedkey
+
+
+Building
+========
+
+This project uses autoconf & friends as its build toolchain. Building it should
+be trivial once the GNU autoconf toolchain is installed.
+
+If you have forked the code from github you will need to run the autoconf
+programs in order to prepare build toolchain:
+
+	autoreconf -vif
+
+Once the toolchain scripts are created simply build the program with:
+
+	./configure --prefix=/usr && make && sudo make install
+
+You should now be able to execute the program speedkey!
+
+
+Usage
+=====
+
+The progam is started from the command line and takes its parameters from the
+command line. It expects to receive as input the random part of the SSID that
+each SpeedTouch modem has as it's factory default. For instance, if your modem
+identifies itselft as "SpeedTouchAABBCC" then simply provide the parameter
+"AABBCC" as input.
+
+	speedkey ABBA11
+
+The program can output multiple WEP keys, this is normal as the other serial
+numbers can endup generating the same SSID value. There's nothing that can be
+done to prevent this. Rest assured that one of the keys printed is the one
+defined as the factory key.
