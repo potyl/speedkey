@@ -73,7 +73,8 @@ struct _ThreadCtx {
 	unsigned char batch_max;
 	const char* wanted_ssid;
 	size_t ssid_len;
-	unsigned char year_max;
+	unsigned char year_start;
+	unsigned char year_end;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -103,35 +104,42 @@ main (int argc , char * const argv[]) {
 	pthread_mutex_t mutex;
 	time_t clock;
 	struct tm *now_tm;
-	unsigned char year_max = 0;
+	unsigned char year_start = 0;
+	unsigned char year_end = 0;
 
 	struct option longopts[] = {
-		{ "max-year", required_argument, NULL, 'y' },
-		{ "threads",  required_argument, NULL, 't' },
-		{ "help",     no_argument,       NULL, 'h' },
-		{ "version",  no_argument,       NULL, 'v' },
+		{ "year-start", required_argument, NULL, 's' },
+		{ "year-end",   required_argument, NULL, 'e' },
+		{ "threads",    required_argument, NULL, 't' },
+		{ "help",       no_argument,       NULL, 'h' },
+		{ "version",    no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 },
 	};
 
 
 	max_threads = 1;
-	while ( (c = getopt_long(argc, argv, "hvt:y:", longopts, NULL)) != -1 ) {
+	while ( (c = getopt_long(argc, argv, "hvt:s:e:", longopts, NULL)) != -1 ) {
 		switch (c) {
 			case 't':
 				max_threads = (size_t) atoi(optarg);
 			break;
 
-			case 'y':
-				year_max = (size_t) atoi(optarg);
+			case 's':
+				year_start = (size_t) atoi(optarg);
+			break;
+
+			case 'e':
+				year_end = (size_t) atoi(optarg);
 			break;
 
 			case 'h':
 				printf("Usage: [OPTION]... SSID\n");
 				printf("Where OPTION is one of:\n");
-				printf("   --version,    -v     show the program's version\n");
-				printf("   --help,       -h     print this help message\n");
-				printf("   --max-year Y, -y Y   generate serials up to the given year\n");
-				printf("   --threads T,  -t T   number of threads to use\n");
+				printf("   --version,      -v     show the program's version\n");
+				printf("   --help,         -h     print this help message\n");
+				printf("   --year-start Y, -s Y   generate serials starting at the given year\n");
+				printf("   --year-end   Y, -s Y   generate serials up to the given year\n");
+				printf("   --threads    T, -t T   number of threads to use\n");
 				return 1;
 			break;
 
@@ -156,11 +164,14 @@ main (int argc , char * const argv[]) {
 		wanted_ssid[i] = tolower((unsigned char) argv[0][i]);
 	}
 
-	/* Set the current year as the maximal year for the serial codes to generate */
-	if (!year_max) {
+	/* Set the current year as the last year for the serial codes to generate */
+	if (!year_end) {
 		time(&clock);
 		now_tm = localtime(&clock);
-		year_max = (unsigned char) (now_tm->tm_year - 100);
+		year_end = (unsigned char) (now_tm->tm_year - 100);
+	}
+	if (!year_start) {
+		year_start = 4;
 	}
 
 	if (max_threads > 1) {
@@ -175,7 +186,8 @@ main (int argc , char * const argv[]) {
 			ThreadCtx *ctx = &threads[i];
 			ctx->batch_i = i;
 			ctx->batch_max = max_threads;
-			ctx->year_max = year_max;
+			ctx->year_start = year_start;
+			ctx->year_end = year_end;
 			ctx->wanted_ssid = wanted_ssid;
 			ctx->ssid_len = ssid_len;
 			ctx->mutex = &mutex;
@@ -197,7 +209,8 @@ main (int argc , char * const argv[]) {
 		ThreadCtx ctx;
 		ctx.batch_i = 0;
 		ctx.batch_max = 1;
-		ctx.year_max = year_max;
+		ctx.year_start = year_start;
+		ctx.year_end = year_end;
 		ctx.wanted_ssid = wanted_ssid;
 		ctx.ssid_len = ssid_len;
 		ctx.mutex = NULL;
@@ -249,7 +262,7 @@ compute_serials (ThreadCtx *ctx) {
 
 	/* Build each part of the serial string and compute the key for each unique
 	   serial number */
-	for (year = 4; year <= ctx->year_max; ++year) {
+	for (year = ctx->year_start; year <= ctx->year_end; ++year) {
 		if (year % ctx->batch_max != (ctx->batch_i)) {
 			continue;
 		}
