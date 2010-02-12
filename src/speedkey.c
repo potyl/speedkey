@@ -321,7 +321,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	}
 	ssid = &sha1_hex[SHA1_DIGEST_HEX_BYTES - ctx->ssid_len];
 
-	/* If this is the desired SSID then we compute the key8 */
+	/* If this is the desired SSID then we compute the key */
 	if (strcmp(ssid, ctx->wanted_ssid) == 0) {
 
 		/* The key is in the first 5 bytes of the SHA1 when converted to hex */
