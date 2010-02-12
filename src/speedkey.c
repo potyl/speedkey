@@ -129,7 +129,7 @@ main (int argc , char * const argv[]) {
 			break;
 
 			case 'e':
-				year_end = (size_t) atoi(optarg);
+				year_end = (size_t) atoi(optarg) + 1;
 			break;
 
 			case 'h':
@@ -262,7 +262,7 @@ compute_serials (ThreadCtx *ctx) {
 
 	/* Build each part of the serial string and compute the key for each unique
 	   serial number */
-	for (year = ctx->year_start; year <= ctx->year_end; ++year) {
+	for (year = ctx->year_start; year < ctx->year_end; ++year) {
 		if (year % ctx->batch_max != (ctx->batch_i)) {
 			continue;
 		}
