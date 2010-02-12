@@ -96,35 +96,42 @@ main (int argc , char * const argv[]) {
 	int c;
 	size_t i;
 	size_t ssid_len;
+	size_t max_threads;
 	char *wanted_ssid;
 	ThreadCtx* threads;
 	pthread_attr_t attr;
 	pthread_mutex_t mutex;
 	time_t clock;
 	struct tm *now_tm;
-	unsigned char year_max;
-
+	unsigned char year_max = 0;
 
 	struct option longopts[] = {
-		{ "threads", required_argument, NULL, 't' },
-		{ "help",    no_argument,       NULL, 'h' },
-		{ "version", no_argument,       NULL, 'v' },
+		{ "max-year", required_argument, NULL, 'y' },
+		{ "threads",  required_argument, NULL, 't' },
+		{ "help",     no_argument,       NULL, 'h' },
+		{ "version",  no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 },
 	};
 
-	size_t max_threads = 1;
-	while ( (c = getopt_long(argc, argv, "hvt:", longopts, NULL)) != -1 ) {
+
+	max_threads = 1;
+	while ( (c = getopt_long(argc, argv, "hvt:y:", longopts, NULL)) != -1 ) {
 		switch (c) {
 			case 't':
 				max_threads = (size_t) atoi(optarg);
 			break;
 
+			case 'y':
+				year_max = (size_t) atoi(optarg);
+			break;
+
 			case 'h':
 				printf("Usage: [OPTION]... SSID\n");
 				printf("Where OPTION is one of:\n");
-				printf("   --version,   -v     show the program's version\n");
-				printf("   --help,      -h     print this help message\n");
-				printf("   --threads T, -t T   number of threads to use\n");
+				printf("   --version,    -v     show the program's version\n");
+				printf("   --help,       -h     print this help message\n");
+				printf("   --max-year Y, -y Y   generate serials up to the given year\n");
+				printf("   --threads T,  -t T   number of threads to use\n");
 				return 1;
 			break;
 
@@ -150,10 +157,11 @@ main (int argc , char * const argv[]) {
 	}
 
 	/* Set the current year as the maximal year for the serial codes to generate */
-	time(&clock);
-	now_tm = localtime(&clock);
-	year_max = (unsigned char) (now_tm->tm_year - 100);
-
+	if (!year_max) {
+		time(&clock);
+		now_tm = localtime(&clock);
+		year_max = (unsigned char) (now_tm->tm_year - 100);
+	}
 
 	if (max_threads > 1) {
 		/* Divide the work in batches */
