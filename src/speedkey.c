@@ -24,6 +24,7 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <getopt.h>
+#include <time.h>
 
 #include "sha1.h"
 #include "config.h"
@@ -72,6 +73,7 @@ struct _ThreadCtx {
 	unsigned char batch_max;
 	const char* wanted_ssid;
 	size_t ssid_len;
+	unsigned char year_max;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -98,6 +100,10 @@ main (int argc , char * const argv[]) {
 	ThreadCtx* threads;
 	pthread_attr_t attr;
 	pthread_mutex_t mutex;
+	time_t clock;
+	struct tm *now_tm;
+	unsigned char year_max;
+
 
 	struct option longopts[] = {
 		{ "threads", required_argument, NULL, 't' },
@@ -143,6 +149,12 @@ main (int argc , char * const argv[]) {
 		wanted_ssid[i] = tolower((unsigned char) argv[0][i]);
 	}
 
+	/* Set the current year as the maximal year for the serial codes to generate */
+	time(&clock);
+	now_tm = localtime(&clock);
+	year_max = (unsigned char) (now_tm->tm_year - 100);
+
+
 	if (max_threads > 1) {
 		/* Divide the work in batches */
 		threads = malloc(max_threads * sizeof(ThreadCtx));
@@ -155,6 +167,7 @@ main (int argc , char * const argv[]) {
 			ThreadCtx *ctx = &threads[i];
 			ctx->batch_i = i;
 			ctx->batch_max = max_threads;
+			ctx->year_max = year_max;
 			ctx->wanted_ssid = wanted_ssid;
 			ctx->ssid_len = ssid_len;
 			ctx->mutex = &mutex;
@@ -176,6 +189,7 @@ main (int argc , char * const argv[]) {
 		ThreadCtx ctx;
 		ctx.batch_i = 0;
 		ctx.batch_max = 1;
+		ctx.year_max = year_max;
 		ctx.wanted_ssid = wanted_ssid;
 		ctx.ssid_len = ssid_len;
 		ctx.mutex = NULL;
@@ -227,7 +241,7 @@ compute_serials (ThreadCtx *ctx) {
 
 	/* Build each part of the serial string and compute the key for each unique
 	   serial number */
-	for (year = 4; year < 10; ++year) {
+	for (year = 4; year <= ctx->year_max; ++year) {
 		if (year % ctx->batch_max != (ctx->batch_i)) {
 			continue;
 		}
