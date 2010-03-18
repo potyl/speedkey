@@ -163,6 +163,7 @@ main (int argc , char * const argv[]) {
 	for (i = 0; i < ssid_len; ++i) {
 		wanted_ssid[i] = tolower((unsigned char) argv[0][i]);
 	}
+	wanted_ssid[ssid_len] = '\0';
 
 	/* Set the current year as the last year for the serial codes to generate */
 	if (!year_end) {
