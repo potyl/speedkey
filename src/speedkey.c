@@ -74,6 +74,7 @@ struct _ThreadCtx {
 	size_t ssid_len;
 	unsigned char year_start;
 	unsigned char year_end;
+	unsigned int debian_format;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -110,14 +111,15 @@ main (int argc , char * const argv[]) {
 		{ "year-start", required_argument, NULL, 's' },
 		{ "year-end",   required_argument, NULL, 'e' },
 		{ "threads",    required_argument, NULL, 't' },
+		{ "debian",     no_argument,       NULL, 'd' },
 		{ "help",       no_argument,       NULL, 'h' },
 		{ "version",    no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 },
 	};
 
-
+	unsigned short int debian_format = 0;
 	max_threads = 1;
-	while ( (c = getopt_long(argc, argv, "hvt:s:e:", longopts, NULL)) != -1 ) {
+	while ( (c = getopt_long(argc, argv, "hvdt:s:e:", longopts, NULL)) != -1 ) {
 		switch (c) {
 			case 't':
 				max_threads = (size_t) atoi(optarg);
@@ -129,6 +131,10 @@ main (int argc , char * const argv[]) {
 
 			case 'e':
 				year_end = (size_t) atoi(optarg) + 1;
+			break;
+
+			case 'd':
+				debian_format = 1;
 			break;
 
 			case 'h':
@@ -187,6 +193,7 @@ main (int argc , char * const argv[]) {
 			ctx->batch_max = max_threads;
 			ctx->year_start = year_start;
 			ctx->year_end = year_end;
+			ctx->debian_format = debian_format;
 			ctx->wanted_ssid = wanted_ssid;
 			ctx->ssid_len = ssid_len;
 			ctx->mutex = &mutex;
@@ -210,6 +217,7 @@ main (int argc , char * const argv[]) {
 		ctx.batch_max = 1;
 		ctx.year_start = year_start;
 		ctx.year_end = year_end;
+		ctx.debian_format = debian_format;
 		ctx.wanted_ssid = wanted_ssid;
 		ctx.ssid_len = ssid_len;
 		ctx.mutex = NULL;
@@ -332,7 +340,13 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		}
 
 		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
-		printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
+		if(ctx->debian_format){
+			printf("iface speedkey inet dhcp\n");
+			printf("\twpa-ssid       %s%s\n", "SpeedTouch", ctx->wanted_ssid);
+			printf("\twpa-passphrase %s\n", sha1_hex);
+		} else {
+			printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
+		}
 		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 	}
 }
