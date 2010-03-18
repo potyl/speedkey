@@ -160,7 +160,7 @@ main (int argc , char * const argv[]) {
 	ssid_len = strlen(argv[0]);
 	wanted_ssid = malloc(ssid_len + 1);
 	for (i = 0; i < ssid_len; ++i) {
-		wanted_ssid[i] = tolower((unsigned char) argv[0][i]);
+		wanted_ssid[i] = toupper((unsigned char) argv[0][i]);
 	}
 
 	/* Set the current year as the last year for the serial codes to generate */
@@ -315,8 +315,8 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	for (i = SHA1_DIGEST_BIN_BYTES - ctx->ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
 		unsigned char c = sha1_bin[i];
 		size_t pos = i * 2;
-		sha1_hex[pos]     = HEX_lc(c / 16);
-		sha1_hex[pos + 1] = HEX_lc(c % 16);
+		sha1_hex[pos]     = HEX(c / 16);
+		sha1_hex[pos + 1] = HEX(c % 16);
 	}
 	ssid = &sha1_hex[SHA1_DIGEST_HEX_BYTES - ctx->ssid_len];
 
