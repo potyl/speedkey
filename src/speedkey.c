@@ -163,7 +163,7 @@ main (int argc , char * const argv[]) {
 	}
 
 	/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
-	unsigned char *ssid = NULL;
+	char *ssid = NULL;
 	ssid = strstr(argv[0], "SpeedTouch");
 	if (ssid) {
 		ssid += strlen("SpeedTouch");
