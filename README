@@ -40,3 +40,6 @@ The program can output multiple WEP keys, this is normal as the other serial
 numbers can endup generating the same SSID value. There's nothing that can be
 done to prevent this. Rest assured that one of the keys printed is the one
 defined as the factory key.
+
+Option -d outputs the SSID/key in Debian's ifupdown /etc/network/interfaces
+format, for ease of pasting.
