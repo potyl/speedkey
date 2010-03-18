@@ -40,7 +40,6 @@
 #define LETTER_lc(x)      LETTER_base('a', x)
 #define LETTER_uc(x)      LETTER_base('A', x)
 #define HEX(x)    ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
-#define HEX_lc(x) ( (x) < 10 ? DIGIT(x) : LETTER_lc((x) - 10) )
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
 #define SERIAL_PART(buffer, pos, x) \
