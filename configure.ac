@@ -20,4 +20,6 @@ AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 
+CFLAGS="$CFLAGS -W -Wall -Wextra -Werror"
+
 AC_OUTPUT
