@@ -162,11 +162,20 @@ main (int argc , char * const argv[]) {
 		return 1;
 	}
 
-	/* Make sure that the target SSID is in lower case */
-	ssid_len = strlen(argv[0]);
+	/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
+	unsigned char *ssid = NULL;
+	ssid = strstr(argv[0], "SpeedTouch");
+	if (ssid) {
+		ssid += strlen("SpeedTouch");
+	} else {
+		ssid = argv[0];
+	}
+
+	/* Make sure that the target SSID is in upper case */
+	ssid_len = strlen(ssid);
 	wanted_ssid = malloc(ssid_len + 1);
 	for (i = 0; i < ssid_len; ++i) {
-		wanted_ssid[i] = toupper((unsigned char) argv[0][i]);
+		wanted_ssid[i] = toupper((unsigned char) ssid[i]);
 	}
 
 	/* Set the current year as the last year for the serial codes to generate */
