@@ -42,7 +42,6 @@
 #define HEX(x)    ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
 #define HEX_lc(x) ( (x) < 10 ? DIGIT(x) : LETTER_lc((x) - 10) )
 
-
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
 #define SERIAL_PART(buffer, pos, x) \
 	do { \
@@ -328,8 +327,8 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		for (i = 0; i < 5; ++i) {
 			unsigned char c = sha1_bin[i];
 			size_t pos = i * 2;
-			sha1_hex[pos]     = HEX_lc(c / 16);
-			sha1_hex[pos + 1] = HEX_lc(c % 16);
+			sha1_hex[pos]     = HEX(c / 16);
+			sha1_hex[pos + 1] = HEX(c % 16);
 		}
 
 		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
