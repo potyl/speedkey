@@ -40,8 +40,6 @@
 #define LETTER_lc(x)      LETTER_base('a', x)
 #define LETTER_uc(x)      LETTER_base('A', x)
 #define HEX(x)    ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
-#define HEX_lc(x) ( (x) < 10 ? DIGIT(x) : LETTER_lc((x) - 10) )
-
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
 #define SERIAL_PART(buffer, pos, x) \
@@ -75,6 +73,7 @@ struct _ThreadCtx {
 	size_t ssid_len;
 	unsigned char year_start;
 	unsigned char year_end;
+	unsigned int debian_format;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -111,14 +110,15 @@ main (int argc , char * const argv[]) {
 		{ "year-start", required_argument, NULL, 's' },
 		{ "year-end",   required_argument, NULL, 'e' },
 		{ "threads",    required_argument, NULL, 't' },
+		{ "debian",     no_argument,       NULL, 'd' },
 		{ "help",       no_argument,       NULL, 'h' },
 		{ "version",    no_argument,       NULL, 'v' },
 		{ NULL, 0, NULL, 0 },
 	};
 
-
+	unsigned short int debian_format = 0;
 	max_threads = 1;
-	while ( (c = getopt_long(argc, argv, "hvt:s:e:", longopts, NULL)) != -1 ) {
+	while ( (c = getopt_long(argc, argv, "hvdt:s:e:", longopts, NULL)) != -1 ) {
 		switch (c) {
 			case 't':
 				max_threads = (size_t) atoi(optarg);
@@ -132,11 +132,16 @@ main (int argc , char * const argv[]) {
 				year_end = (size_t) atoi(optarg) + 1;
 			break;
 
+			case 'd':
+				debian_format = 1;
+			break;
+
 			case 'h':
 				printf("Usage: [OPTION]... SSID\n");
 				printf("Where OPTION is one of:\n");
 				printf("   --version,      -v     show the program's version\n");
 				printf("   --help,         -h     print this help message\n");
+				printf("   --debian,       -d     generate debian's /etc/network/interfaces format\n");
 				printf("   --year-start Y, -s Y   generate serials starting at the given year\n");
 				printf("   --year-end   Y, -s Y   generate serials up to the given year\n");
 				printf("   --threads    T, -t T   number of threads to use\n");
@@ -157,11 +162,20 @@ main (int argc , char * const argv[]) {
 		return 1;
 	}
 
-	/* Make sure that the target SSID is in lower case */
-	ssid_len = strlen(argv[0]);
+	/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
+	char *ssid = NULL;
+	ssid = strstr(argv[0], "SpeedTouch");
+	if (ssid) {
+		ssid += strlen("SpeedTouch");
+	} else {
+		ssid = argv[0];
+	}
+
+	/* Make sure that the target SSID is in upper case */
+	ssid_len = strlen(ssid);
 	wanted_ssid = malloc(ssid_len + 1);
 	for (i = 0; i < ssid_len; ++i) {
-		wanted_ssid[i] = tolower((unsigned char) argv[0][i]);
+		wanted_ssid[i] = toupper((unsigned char) ssid[i]);
 	}
 	wanted_ssid[ssid_len] = '\0';
 
@@ -189,6 +203,7 @@ main (int argc , char * const argv[]) {
 			ctx->batch_max = max_threads;
 			ctx->year_start = year_start;
 			ctx->year_end = year_end;
+			ctx->debian_format = debian_format;
 			ctx->wanted_ssid = wanted_ssid;
 			ctx->ssid_len = ssid_len;
 			ctx->mutex = &mutex;
@@ -212,6 +227,7 @@ main (int argc , char * const argv[]) {
 		ctx.batch_max = 1;
 		ctx.year_start = year_start;
 		ctx.year_end = year_end;
+		ctx.debian_format = debian_format;
 		ctx.wanted_ssid = wanted_ssid;
 		ctx.ssid_len = ssid_len;
 		ctx.mutex = NULL;
@@ -317,8 +333,8 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	for (i = SHA1_DIGEST_BIN_BYTES - ctx->ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
 		unsigned char c = sha1_bin[i];
 		size_t pos = i * 2;
-		sha1_hex[pos]     = HEX_lc(c / 16);
-		sha1_hex[pos + 1] = HEX_lc(c % 16);
+		sha1_hex[pos]     = HEX(c / 16);
+		sha1_hex[pos + 1] = HEX(c % 16);
 	}
 	ssid = &sha1_hex[SHA1_DIGEST_HEX_BYTES - ctx->ssid_len];
 
@@ -329,12 +345,18 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		for (i = 0; i < 5; ++i) {
 			unsigned char c = sha1_bin[i];
 			size_t pos = i * 2;
-			sha1_hex[pos]     = HEX_lc(c / 16);
-			sha1_hex[pos + 1] = HEX_lc(c % 16);
+			sha1_hex[pos]     = HEX(c / 16);
+			sha1_hex[pos + 1] = HEX(c % 16);
 		}
 
 		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
-		printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
+		if(ctx->debian_format){
+			printf("iface speedkey inet dhcp\n");
+			printf("\twpa-ssid       %s%s\n", "SpeedTouch", ctx->wanted_ssid);
+			printf("\twpa-passphrase %s\n", sha1_hex);
+		} else {
+			printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
+		}
 		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 	}
 }
