@@ -1,3 +1,8 @@
+0.0.6 Fri Mar 19 20:36:19 CET 2010
+	- Add the option --debian (generate debian's /etc/network/interfaces format).
+	- Allow the SSID to include the router's brand (SpeedTouch or Thomson).
+	- Possible memory crash fix (string not null terminated).
+
 0.0.5 Fri Feb 12 21:58:04 CET 2010
 	- Allow the start and end year of the serial to be passed at the command line.
 	- Small speed improvement.
