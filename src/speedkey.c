@@ -369,7 +369,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
  */
 static inline void *
 ptr_align (void const *ptr, size_t alignment) {
-  char const *p0 = ptr;
-  char const *p1 = p0 + alignment - 1;
-  return (void *) (p1 - (size_t) p1 % alignment);
+	char const *p0 = ptr;
+	char const *p1 = p0 + alignment - 1;
+	return (void *) (p1 - (size_t) p1 % alignment);
 }
