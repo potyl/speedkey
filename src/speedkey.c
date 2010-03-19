@@ -18,6 +18,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -105,6 +107,7 @@ main (int argc , char * const argv[]) {
 	struct tm *now_tm;
 	unsigned char year_start = 0;
 	unsigned char year_end = 0;
+	char *ssid;
 
 	struct option longopts[] = {
 		{ "year-start", required_argument, NULL, 's' },
@@ -163,11 +166,19 @@ main (int argc , char * const argv[]) {
 	}
 
 	/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
-	char *ssid = NULL;
-	ssid = strstr(argv[0], "SpeedTouch");
+	ssid = strcasestr(argv[0], "SpeedTouch");
 	if (ssid) {
 		ssid += strlen("SpeedTouch");
-	} else {
+	}
+
+	if (ssid == NULL) {
+		ssid = strcasestr(argv[0], "Thomson");
+		if (ssid) {
+			ssid += strlen("Thomson");
+		}
+	}
+
+	if (ssid == NULL) {
 		ssid = argv[0];
 	}
 
