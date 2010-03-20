@@ -76,6 +76,7 @@ struct _ThreadCtx {
 	unsigned char year_start;
 	unsigned char year_end;
 	unsigned int debian_format;
+	const char* router_type;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -108,6 +109,7 @@ main (int argc , char * const argv[]) {
 	unsigned char year_start = 0;
 	unsigned char year_end = 0;
 	char *ssid;
+	const char *router_type;
 
 	struct option longopts[] = {
 		{ "year-start", required_argument, NULL, 's' },
@@ -166,20 +168,23 @@ main (int argc , char * const argv[]) {
 	}
 
 	/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
-	ssid = strcasestr(argv[0], "SpeedTouch");
+	router_type = "SpeedTouch";
+	ssid = strcasestr(argv[0], router_type);
 	if (ssid) {
-		ssid += strlen("SpeedTouch");
+		ssid += strlen(router_type);
 	}
 
 	if (ssid == NULL) {
-		ssid = strcasestr(argv[0], "Thomson");
+		router_type = "Thomson";
+		ssid = strcasestr(argv[0], router_type);
 		if (ssid) {
-			ssid += strlen("Thomson");
+			ssid += strlen(router_type);
 		}
 	}
 
 	if (ssid == NULL) {
 		ssid = argv[0];
+		router_type = "SpeedTouch";
 	}
 
 	/* Make sure that the target SSID is in upper case */
@@ -218,6 +223,7 @@ main (int argc , char * const argv[]) {
 			ctx->wanted_ssid = wanted_ssid;
 			ctx->ssid_len = ssid_len;
 			ctx->mutex = &mutex;
+			ctx->router_type = router_type;
 			pthread_create(&ctx->tid, &attr, start_thread, ctx);
 		}
 
@@ -242,6 +248,7 @@ main (int argc , char * const argv[]) {
 		ctx.wanted_ssid = wanted_ssid;
 		ctx.ssid_len = ssid_len;
 		ctx.mutex = NULL;
+		ctx.router_type = router_type;
 		compute_serials(&ctx);
 	}
 
@@ -362,9 +369,13 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 
 		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
 		if (ctx->debian_format) {
-			printf("iface speedkey inet dhcp\n");
-			printf("\twpa-ssid       %s%s\n", "SpeedTouch", ctx->wanted_ssid);
-			printf("\twpa-passphrase %s\n", sha1_hex);
+			printf(
+				"iface speedkey inet dhcp\n"
+				"\twpa-ssid       %s%s\n"
+				"\twpa-passphrase %s\n",
+				ctx->router_type, ctx->wanted_ssid,
+				sha1_hex
+			);
 		}
 		else {
 			printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
