@@ -361,11 +361,12 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		}
 
 		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
-		if(ctx->debian_format){
+		if (ctx->debian_format) {
 			printf("iface speedkey inet dhcp\n");
 			printf("\twpa-ssid       %s%s\n", "SpeedTouch", ctx->wanted_ssid);
 			printf("\twpa-passphrase %s\n", sha1_hex);
-		} else {
+		}
+		else {
 			printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
 		}
 		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
