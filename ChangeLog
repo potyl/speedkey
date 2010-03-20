@@ -1,3 +1,6 @@
+0.0.7 Sat Mar 20 22:21:29 CET 2010
+	- Show the right router name when called with --debian.
+
 0.0.6 Fri Mar 19 20:36:19 CET 2010
 	- Add the option --debian (generate debian's /etc/network/interfaces format).
 	- Allow the SSID to include the router's brand (SpeedTouch or Thomson).
