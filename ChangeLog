@@ -1,3 +1,6 @@
+0.0.8 Thu Apr 22 23:08:12 CEST 2010
+	- Fix a typo in the usage.
+
 0.0.7 Sat Mar 20 22:21:29 CET 2010
 	- Show the right router name when called with --debian.
 
