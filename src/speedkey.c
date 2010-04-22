@@ -39,7 +39,6 @@
 
 #define DIGIT(x) ('0' + (x))
 #define LETTER_base(b, x) ((b) + (x))
-#define LETTER_lc(x)      LETTER_base('a', x)
 #define LETTER_uc(x)      LETTER_base('A', x)
 #define HEX(x)    ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
 
