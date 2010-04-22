@@ -148,7 +148,7 @@ main (int argc , char * const argv[]) {
 				printf("   --help,         -h     print this help message\n");
 				printf("   --debian,       -d     generate debian's /etc/network/interfaces format\n");
 				printf("   --year-start Y, -s Y   generate serials starting at the given year\n");
-				printf("   --year-end   Y, -s Y   generate serials up to the given year\n");
+				printf("   --year-end   Y, -e Y   generate serials up to the given year\n");
 				printf("   --threads    T, -t T   number of threads to use\n");
 				return 1;
 			break;
