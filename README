@@ -22,7 +22,7 @@ doing:
 If you have forked the code from github you will need to run the autoconf
 programs in order to prepare build toolchain:
 
-	autoreconf -vif
+	./autogen.sh
 
 Once the toolchain scripts are created simply build the program with:
 
