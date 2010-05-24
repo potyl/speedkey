@@ -9,6 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 
 AM_MAINTAINER_MODE
 AC_PROG_CC
+AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
@@ -18,7 +19,7 @@ AC_SEARCH_LIBS([pthread_create], [pthread])
 # Make sure we keep ACLOCAL_FLAGS around for maintainer builds to work
 AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 
-AC_CONFIG_FILES([Makefile src/Makefile])
+AC_CONFIG_FILES([Makefile sha1/Makefile src/Makefile])
 
 CFLAGS="$CFLAGS -W -Wall -Wextra -Werror"
 

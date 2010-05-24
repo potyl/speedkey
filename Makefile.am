@@ -1,2 +1,1 @@
-SUBDIRS = src
-
+SUBDIRS = sha1 src
