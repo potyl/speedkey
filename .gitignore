@@ -17,4 +17,7 @@ src/Makefile
 src/Makefile.in
 src/speedkey
 src/*.o
+sha1/.deps
+sha1/libsha1.a
+sha1/*.o
 stamp-h1
