@@ -16,7 +16,7 @@ be trivial once the GNU autoconf toolchain is installed.
 In Debian based systems the build dependencies can be easily installed by
 doing:
 
-	sudo apt-get install build-essential autoconf libtool
+	sudo apt-get install build-essential autoconf libtool libssl-dev
 
 
 If you have forked the code from github you will need to run the autoconf

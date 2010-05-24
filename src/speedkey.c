@@ -28,12 +28,18 @@
 #include <getopt.h>
 #include <time.h>
 
-#include "sha1.h"
+#ifdef HAS_OPENSSL
+#    include <openssl/sha.h>
+#    define  SHA1_BUFFER_TYPE(buffer) ((const unsigned char *) buffer)
+#else
+#    include "sha1.h"
+#    define  SHA1_BUFFER_TYPE(buffer) ((const char *) buffer)
+#endif
+
 #include "config.h"
 
 #define SERIAL_LENGTH 12
 #define SHA1_DIGEST_BITS 160
-#define SHA1_DIGEST_ALIGN 4
 #define SHA1_DIGEST_HEX_BYTES (SHA1_DIGEST_BITS / 4)
 #define SHA1_DIGEST_BIN_BYTES (SHA1_DIGEST_BITS / 8)
 
@@ -88,9 +94,6 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len);
 
 static void*
 start_thread (void *data);
-
-static inline void *
-ptr_align (void const *ptr, size_t alignment);
 
 
 int
@@ -334,9 +337,8 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	size_t i;
 	char *ssid;
 
-	/* Will hold the SHA1 in binary format; bin_buffer is going to be properly aligned */
-	unsigned char sha1_bin_unaligned [SHA1_DIGEST_BIN_BYTES + SHA1_DIGEST_ALIGN];
-	unsigned char *sha1_bin = ptr_align(sha1_bin_unaligned, SHA1_DIGEST_ALIGN);
+	/* Will hold the SHA1 in binary format */
+	unsigned char sha1_bin [SHA1_DIGEST_BIN_BYTES];
 
 	/* Human readable SHA1 */
 	char sha1_hex [SHA1_DIGEST_HEX_BYTES  + 1];
@@ -344,7 +346,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 
 	/* Now that the serial number is generated we can compute its corresponding
 	   key which is derived from it's SHA1. */
-	sha1_buffer(serial, len - 1, sha1_bin);
+	SHA1(SHA1_BUFFER_TYPE(serial), len - 1, sha1_bin);
 
 	/* The SSID is in the last bytes of the SHA1 when converted to hex */
 	for (i = SHA1_DIGEST_BIN_BYTES - ctx->ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
@@ -381,17 +383,4 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		}
 		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 	}
-}
-
-
-/*
- * Return PTR, aligned upward to the next multiple of ALIGNMENT. ALIGNMENT must
- * be nonzero.  The caller must arrange for ((char *) PTR) through
- * ((char *) PTR + ALIGNMENT - 1) to be addressable locations.
- */
-static inline void *
-ptr_align (void const *ptr, size_t alignment) {
-	char const *p0 = ptr;
-	char const *p1 = p0 + alignment - 1;
-	return (void *) (p1 - (size_t) p1 % alignment);
 }

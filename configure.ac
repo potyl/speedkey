@@ -16,6 +16,27 @@ AC_PROG_MAKE_SET
 # Libraries
 AC_SEARCH_LIBS([pthread_create], [pthread])
 
+
+# -----------------------------------------------------------
+# Enable openssl
+# -----------------------------------------------------------
+
+AC_ARG_ENABLE(
+	openssl,
+	AS_HELP_STRING([--disable-openssl],[Do not compile with OpenSSL support]),
+	enable_openssl=$enableval, enable_openssl=yes
+)
+
+if test x$enable_openssl = xyes; then
+	PKG_CHECK_MODULES(OPENSSL, [ openssl >= 0.9.8 ])
+	AC_SUBST(OPENSSL_CFLAGS)
+	AC_SUBST(OPENSSL_LIBS)
+fi
+
+AM_CONDITIONAL(HAS_OPENSSL, test "x$enable_openssl" = "xyes")
+
+
+
 # Make sure we keep ACLOCAL_FLAGS around for maintainer builds to work
 AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 

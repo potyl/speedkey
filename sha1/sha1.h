@@ -27,7 +27,7 @@
 extern "C" {
 # endif
 
-#define SHA1_DIGEST_SIZE 20
+#define SHA1(buffer, len, digest) sha1_buffer(buffer, len, digest)
 
 /* Structure to save state of computation between the single steps.  */
 struct sha1_ctx

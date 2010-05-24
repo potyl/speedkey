@@ -1,6 +1,11 @@
-bin_PROGRAMS = speedkey
-
+bin_PROGRAMS      = speedkey
 speedkey_SOURCES  = speedkey.c
-speedkey_LDADD    = $(top_srcdir)/sha1/libsha1.a
-speedkey_CPPFLAGS = -I$(top_srcdir)/sha1
 
+
+if HAS_OPENSSL
+speedkey_CPPFLAGS = -DHAS_OPENSSL
+speedkey_LDADD    = @OPENSSL_LIBS@
+else
+speedkey_CPPFLAGS = -I$(top_srcdir)/sha1
+speedkey_LDADD    = $(top_srcdir)/sha1/libsha1.a
+endif
