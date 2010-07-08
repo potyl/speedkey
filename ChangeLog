@@ -1,3 +1,6 @@
+0.0.10 Thu Jul  8 23:00:22 CEST 2010
+	- Accept multiple SSIDs.
+
 0.0.9 Mon May 24 21:57:23 CEST 2010
 	- Conditional support for OpenSSL (--enable-openssl)
 
