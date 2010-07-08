@@ -229,15 +229,16 @@ main (int argc , char * const argv[]) {
 		compute_serials(&ctx);
 	}
 
-	for (i = 0; i < (size_t) argc; ++i) {
-		WifiRouter *router = routers[i];
-		if (router == NULL) {
-			break;
+	if (routers != NULL) {
+		WifiRouter **tmp = routers;
+		for (; *tmp != NULL; ++tmp) {
+			WifiRouter *router = *tmp;
+			free(router->ssid);
+			free(router);
 		}
-		free(router->ssid);
-		free(router);
+		free(routers);
 	}
-	free(routers);
+
 	return 0;
 }
 
