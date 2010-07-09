@@ -336,6 +336,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	size_t i;
 	char *ssid;
 	WifiRouter **routers_iter;
+	char start_computed = 0;
 
 	/* Will hold the SHA1 in binary format */
 	unsigned char sha1_bin [SHA1_DIGEST_BIN_BYTES];
@@ -364,11 +365,14 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		if (strcmp(ssid, router->ssid) == 0) {
 
 			/* The key is in the first 5 bytes of the SHA1 when converted to hex */
-			for (i = 0; i < 5; ++i) {
-				unsigned char c = sha1_bin[i];
-				size_t pos = i * 2;
-				sha1_hex[pos]     = HEX(c / 16);
-				sha1_hex[pos + 1] = HEX(c % 16);
+			if (! start_computed) {
+				for (i = 0; i < 5; ++i) {
+					unsigned char c = sha1_bin[i];
+					size_t pos = i * 2;
+					sha1_hex[pos]     = HEX(c / 16);
+					sha1_hex[pos + 1] = HEX(c % 16);
+				}
+				start_computed = 1;
 			}
 
 			if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
