@@ -87,6 +87,7 @@ struct _ThreadCtx {
 	unsigned char year_end;
 	unsigned int debian_format;
 	WifiRouter **routers;
+	size_t max_ssid_len;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -116,7 +117,9 @@ main (int argc , char * const argv[]) {
 	struct tm *now_tm;
 	unsigned char year_start = 0;
 	unsigned char year_end = 0;
-	WifiRouter **routers;
+	WifiRouter **routers = NULL;
+	WifiRouter **routers_iter;
+	size_t max_ssid_len = 0;
 
 	struct option longopts[] = {
 		{ "year-start", required_argument, NULL, 's' },
@@ -175,6 +178,18 @@ main (int argc , char * const argv[]) {
 	}
 
 	routers = parse_router_arg(argc, argv);
+	if (routers == NULL) {
+		printf("Usage: SSID...\n");
+		return 1;
+	}
+
+	/* Get the legnth of the biggest SSID to parse */
+	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
+		WifiRouter *router = *routers_iter;
+		if (max_ssid_len < router->ssid_len) {
+			max_ssid_len = router->ssid_len;
+		}
+	}
 
 	/* Set the current year as the last year for the serial codes to generate */
 	if (!year_end) {
@@ -203,6 +218,7 @@ main (int argc , char * const argv[]) {
 			ctx->debian_format = debian_format;
 			ctx->mutex = &mutex;
 			ctx->routers = routers;
+			ctx->max_ssid_len = max_ssid_len;
 			pthread_create(&ctx->tid, &attr, start_thread, ctx);
 		}
 
@@ -226,18 +242,17 @@ main (int argc , char * const argv[]) {
 		ctx.debian_format = debian_format;
 		ctx.mutex = NULL;
 		ctx.routers = routers;
+		ctx.max_ssid_len = max_ssid_len;
 		compute_serials(&ctx);
 	}
 
-	if (routers != NULL) {
-		WifiRouter **tmp = routers;
-		for (; *tmp != NULL; ++tmp) {
-			WifiRouter *router = *tmp;
-			free(router->ssid);
-			free(router);
-		}
-		free(routers);
+	/* Cleanup */
+	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
+		WifiRouter *router = *routers_iter;
+		free(router->ssid);
+		free(router);
 	}
+	free(routers);
 
 	return 0;
 }
@@ -334,14 +349,15 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	SHA1(SHA1_BUFFER_TYPE(serial), len - 1, sha1_bin);
 
 	/* The SSID is in the last bytes of the SHA1 when converted to hex */
+	for (i = SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
+		unsigned char c = sha1_bin[i];
+		size_t pos = i * 2;
+		sha1_hex[pos]     = HEX(c / 16);
+		sha1_hex[pos + 1] = HEX(c % 16);
+	}
+
 	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
-		for (i = SHA1_DIGEST_BIN_BYTES - router->ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
-			unsigned char c = sha1_bin[i];
-			size_t pos = i * 2;
-			sha1_hex[pos]     = HEX(c / 16);
-			sha1_hex[pos + 1] = HEX(c % 16);
-		}
 		ssid = &sha1_hex[SHA1_DIGEST_HEX_BYTES - router->ssid_len];
 
 		/* If this is the desired SSID then we compute the key */
