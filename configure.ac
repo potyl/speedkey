@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT(speedkey, 0.0.10, http://github.com/potyl/speedkey)
+AC_INIT(speedkey, 0.0.11, http://github.com/potyl/speedkey)
 AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 AC_CONFIG_SRCDIR([src])
