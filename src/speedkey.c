@@ -295,7 +295,7 @@ start_thread (void *data) {
  */
 static void
 compute_serials (ThreadCtx *ctx) {
-	unsigned char year, week, l1, l2, l3;
+	unsigned char year, week, p1, p2, p3;
 
 	/* Serial number that gets digested through SHA1; all serials numbers start
 	   with "CP" */
@@ -316,14 +316,14 @@ compute_serials (ThreadCtx *ctx) {
 			SERIAL_DIGIT(serial, 4, week);
 
 			/* The serial contains 3 letters that are in the range ['A' .. 'Z', '0' .. '9'] */
-			for (l1 = 0; l1 < 36; ++l1) {
-				SERIAL_PART(serial, 6, l1);
+			for (p1 = 0; p1 < 36; ++p1) {
+				SERIAL_PART(serial, 6, p1);
 
-				for (l2 = 0; l2 < 36; ++l2) {
-					SERIAL_PART(serial, 8, l2);
+				for (p2 = 0; p2 < 36; ++p2) {
+					SERIAL_PART(serial, 8, p2);
 
-					for (l3 = 0; l3 < 36; ++l3) {
-						SERIAL_PART(serial, 10, l3);
+					for (p3 = 0; p3 < 36; ++p3) {
+						SERIAL_PART(serial, 10, p3);
 						process_serial(ctx, serial, sizeof(serial));
 					}
 				}
