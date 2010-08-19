@@ -43,34 +43,31 @@
 #define SHA1_DIGEST_HEX_BYTES (SHA1_DIGEST_BITS / 4)
 #define SHA1_DIGEST_BIN_BYTES (SHA1_DIGEST_BITS / 8)
 
-#define DIGIT(x)           HEX(x)
-#define LETTER(x)          ('A' + (x))
-#define HEX(x)             HEX[x]
+/* Insert into the content of 'a' into buffer[pos] and 'b' into buffer[pos + 1] */
 #define WRITE_BYTES(buffer, pos, a, b)  \
 	do { \
 		(buffer)[pos] = a; \
 		(buffer)[(pos) + 1] = b; \
 	} while (0)
 
-#define WRITE_HEX(buffer, pos, h)  WRITE_BYTES(buffer, pos, HEX((h) >> 4), HEX((h) & 0x0F))
+/* Insert into buffer[pos] and buffer[pos+1] the value of sprintf("%02X, x) */
+#define WRITE_HEX(buffer, pos, h)  WRITE_BYTES(buffer, pos, HEX[(h) >> 4], HEX[(h) & 0x0F])
 
+/* Insert into buffer[pos] and buffer[pos+1] the value of sprintf("%02d", x) */
+#define SERIAL_DIGIT(buffer, pos, x) WRITE_BYTES(buffer, pos, HEX[(x) / 10], HEX[(x) % 10])
 
-/* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
+/* Insert into buffer[pos] and buffer[pos+1] the value of a serial part */
 #define SERIAL_PART(buffer, pos, x) \
 	do { \
 		if ((x) < 10) { \
 			/* 0 -> "30", 1 -> "31", .., 9 -> "39" */ \
-			WRITE_BYTES(buffer, pos, '3', DIGIT(x)); \
+			WRITE_BYTES(buffer, pos, '3', HEX[x]); \
 		} \
 		else { \
-			char c = HEX[(x)]; \
+			char c = HEX[x]; \
 			WRITE_HEX(buffer, pos, c); \
 		} \
 	} while (0)
-
-/* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02d", x */
-#define SERIAL_DIGIT(buffer, pos, x) WRITE_BYTES(buffer, pos, DIGIT((x) / 10), DIGIT((x) % 10))
-
 
 struct _WifiRouter {
 	char *ssid;
