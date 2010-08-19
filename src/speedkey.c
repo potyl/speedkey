@@ -63,7 +63,7 @@
 			WRITE_BYTES(buffer, pos, '3', DIGIT(x)); \
 		} \
 		else { \
-			char c = LETTER((x) - 10); \
+			char c = HEX[(x)]; \
 			WRITE_HEX(buffer, pos, c); \
 		} \
 	} while (0)
@@ -105,25 +105,13 @@ start_thread (void *data);
 static WifiRouter**
 parse_router_arg (int argc , char * const argv[]);
 
+/*
+   The mappings to use for converting a nibble to a hex string. This mapping
+   extends to the whole alphabet because the generation of the serial numbers
+   uses all letters.
+*/
+static char HEX [] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-static char HEX [] = {
-	'0',
-	'1',
-	'2',
-	'3',
-	'4',
-	'5',
-	'6',
-	'7',
-	'8',
-	'9',
-	'A',
-	'B',
-	'C',
-	'D',
-	'E',
-	'F',
-};
 
 int
 main (int argc , char * const argv[]) {
