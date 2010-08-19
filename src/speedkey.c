@@ -58,8 +58,8 @@
 		} \
 		else { \
 			char c = LETTER_uc((x) - 10); \
-			(buffer)[(pos)]     = HEX((c) / 16); \
-			(buffer)[(pos) + 1] = HEX((c) % 16); \
+			(buffer)[(pos)]     = HEX((c) >> 4); \
+			(buffer)[(pos) + 1] = HEX((c) & 0x0F); \
 		} \
 	} while (0)
 
@@ -353,8 +353,8 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	for (i = SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
 		unsigned char c = sha1_bin[i];
 		size_t pos = i * 2;
-		sha1_hex[pos]     = HEX(c / 16);
-		sha1_hex[pos + 1] = HEX(c % 16);
+		sha1_hex[pos]     = HEX(c >> 4);
+		sha1_hex[pos + 1] = HEX(c & 0x0F);
 	}
 
 	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
@@ -369,8 +369,8 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 				for (i = 0; i < 5; ++i) {
 					unsigned char c = sha1_bin[i];
 					size_t pos = i * 2;
-					sha1_hex[pos]     = HEX(c / 16);
-					sha1_hex[pos + 1] = HEX(c % 16);
+					sha1_hex[pos]     = HEX(c >> 4);
+					sha1_hex[pos + 1] = HEX(c & 0x0F);
 				}
 				start_computed = 1;
 			}
