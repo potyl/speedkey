@@ -1,3 +1,6 @@
+0.0.12 Thu Aug 19 22:07:52 CEST 2010
+	- Speed improvement: transform the bytes to hex through an array lookup.
+
 0.0.11 Fri Jul  9 22:18:22 CEST 2010
 	- Speed improvement: transform the binary SHA1 to hex only once per iteration.
 
