@@ -46,7 +46,7 @@
 #define DIGIT(x)           ('0' + (x))
 #define LETTER_base(b, x)  ((b) + (x))
 #define LETTER_uc(x)       LETTER_base('A', x)
-#define HEX(x)             ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
+#define HEX(x)             HEX[(x)]
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
 #define SERIAL_PART(buffer, pos, x) \
@@ -104,6 +104,25 @@ start_thread (void *data);
 static WifiRouter**
 parse_router_arg (int argc , char * const argv[]);
 
+
+static char HEX [] = {
+	'0',
+	'1',
+	'2',
+	'3',
+	'4',
+	'5',
+	'6',
+	'7',
+	'8',
+	'9',
+	'A',
+	'B',
+	'C',
+	'D',
+	'E',
+	'F',
+};
 
 int
 main (int argc , char * const argv[]) {
