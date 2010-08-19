@@ -52,7 +52,7 @@
 #define SERIAL_PART(buffer, pos, x) \
 	do { \
 		if (x < 10) { \
-			/* 30 -> 0 in hex, 31 -> 1 in hex, etc */ \
+			/* 0 -> "30", 1 -> "31", .., 9 -> "39" */ \
 			(buffer)[(pos)]     = '3'; \
 			(buffer)[(pos) + 1] = DIGIT(x); \
 		} \
