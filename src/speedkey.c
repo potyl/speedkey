@@ -43,10 +43,10 @@
 #define SHA1_DIGEST_HEX_BYTES (SHA1_DIGEST_BITS / 4)
 #define SHA1_DIGEST_BIN_BYTES (SHA1_DIGEST_BITS / 8)
 
-#define DIGIT(x) ('0' + (x))
-#define LETTER_base(b, x) ((b) + (x))
-#define LETTER_uc(x)      LETTER_base('A', x)
-#define HEX(x)    ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
+#define DIGIT(x)           ('0' + (x))
+#define LETTER_base(b, x)  ((b) + (x))
+#define LETTER_uc(x)       LETTER_base('A', x)
+#define HEX(x)             ( (x) < 10 ? DIGIT(x) : LETTER_uc((x) - 10) )
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
 #define SERIAL_PART(buffer, pos, x) \
