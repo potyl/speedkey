@@ -353,7 +353,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	memset(sha1_hex, 0, sizeof(sha1_hex));
 
 	/* Now that the serial number is generated we can compute its corresponding
-	   key which is derived from it's SHA1. */
+	   key which is derived from its SHA1. */
 	SHA1(SHA1_BUFFER_TYPE(serial), len - 1, sha1_bin);
 
 	/* The SSID is in the last bytes of the SHA1 when converted to hex */
