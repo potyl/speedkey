@@ -42,10 +42,10 @@ identifies itselft as "SpeedTouchAABBCC" then simply provide the parameter
 
 	speedkey ABBA11
 
-The program can output multiple WEP keys, this is normal as the other serial
-numbers can endup generating the same SSID value. There's nothing that can be
-done to prevent this. Rest assured that one of the keys printed is the one
-defined as the factory key.
+The program can output multiple WEP keys, this is normal as multiple serial
+numbers can generate the same SSID value. Rest assured that one of the keys
+printed is the one defined as the factory key. It's up to you to find out which
+one is the real WEP key.
 
 Option -d outputs the SSID/key in Debian's ifupdown /etc/network/interfaces
 format, for ease of pasting.
