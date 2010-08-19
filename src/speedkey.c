@@ -43,32 +43,33 @@
 #define SHA1_DIGEST_HEX_BYTES (SHA1_DIGEST_BITS / 4)
 #define SHA1_DIGEST_BIN_BYTES (SHA1_DIGEST_BITS / 8)
 
-#define DIGIT(x)           ('0' + (x))
-#define LETTER_base(b, x)  ((b) + (x))
-#define LETTER_uc(x)       LETTER_base('A', x)
-#define HEX(x)             HEX[(x)]
+#define DIGIT(x)           HEX(x)
+#define LETTER(x)          ('A' + (x))
+#define HEX(x)             HEX[x]
+#define WRITE_BYTES(buffer, pos, a, b)  \
+	do { \
+		(buffer)[pos] = a; \
+		(buffer)[(pos) + 1] = b; \
+	} while (0)
+
+#define WRITE_HEX(buffer, pos, h)  WRITE_BYTES(buffer, pos, HEX((h) >> 4), HEX((h) & 0x0F))
+
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02X", x */
 #define SERIAL_PART(buffer, pos, x) \
 	do { \
-		if (x < 10) { \
+		if ((x) < 10) { \
 			/* 0 -> "30", 1 -> "31", .., 9 -> "39" */ \
-			(buffer)[(pos)]     = '3'; \
-			(buffer)[(pos) + 1] = DIGIT(x); \
+			WRITE_BYTES(buffer, pos, '3', DIGIT(x)); \
 		} \
 		else { \
-			char c = LETTER_uc((x) - 10); \
-			(buffer)[(pos)]     = HEX((c) >> 4); \
-			(buffer)[(pos) + 1] = HEX((c) & 0x0F); \
+			char c = LETTER((x) - 10); \
+			WRITE_HEX(buffer, pos, c); \
 		} \
 	} while (0)
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf "%02d", x */
-#define SERIAL_DIGIT(buffer, pos, x) \
-	do { \
-		(buffer)[(pos)]     = DIGIT((x) / 10); \
-		(buffer)[(pos) + 1] = DIGIT((x) % 10); \
-	} while (0)
+#define SERIAL_DIGIT(buffer, pos, x) WRITE_BYTES(buffer, pos, DIGIT((x) / 10), DIGIT((x) % 10))
 
 
 struct _WifiRouter {
@@ -321,7 +322,6 @@ compute_serials (ThreadCtx *ctx) {
 		if (year % ctx->batch_max != (ctx->batch_i)) {
 			continue;
 		}
-
 		SERIAL_DIGIT(serial, 2, year);
 
 		for (week = 1; week <= 52; ++week) {
@@ -372,8 +372,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	for (i = SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
 		unsigned char c = sha1_bin[i];
 		size_t pos = i * 2;
-		sha1_hex[pos]     = HEX(c >> 4);
-		sha1_hex[pos + 1] = HEX(c & 0x0F);
+		WRITE_HEX(sha1_hex, pos, c);
 	}
 
 	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
@@ -388,8 +387,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 				for (i = 0; i < 5; ++i) {
 					unsigned char c = sha1_bin[i];
 					size_t pos = i * 2;
-					sha1_hex[pos]     = HEX(c >> 4);
-					sha1_hex[pos + 1] = HEX(c & 0x0F);
+					WRITE_HEX(sha1_hex, pos, c);
 				}
 				start_computed = 1;
 			}
