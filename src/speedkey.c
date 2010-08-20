@@ -51,7 +51,7 @@
 	} while (0)
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf("%02X, x) */
-#define WRITE_HEX(buffer, pos, h)  WRITE_BYTES(buffer, pos, HEX[(h) >> 4], HEX[(h) & 0x0F])
+#define WRITE_HEX(buffer, pos, h)  WRITE_BYTES(buffer, pos, HEX[(h & 0xF0) >> 4], HEX[(h) & 0x0F])
 
 /* Insert into buffer[pos] and buffer[pos+1] the value of sprintf("%02d", x) */
 #define SERIAL_DIGIT(buffer, pos, x) WRITE_BYTES(buffer, pos, HEX[(x) / 10], HEX[(x) % 10])
