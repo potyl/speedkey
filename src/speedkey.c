@@ -279,16 +279,19 @@ start_thread (void *data) {
  * there's no heuristic than can help.
  *
  * The serial number is assumed to be in the following format:
- *   CP$(YY)$(WW)--$(L)$(L)$(L)  ex: CP0923H3FHE
+ *   CP$(YY)$(WW)--$(P1)$(P2)$(P3)  ex: CP0923H3FHE
  * Where:
  *   $(YY) is the year [04, 09]
  *   $(WW) is the week number [01, 52]
- *   $(L) a single character each ['A' .. 'Z', '0' .. '9']
+ *   $(P*) a single character in the range ['A' .. 'Z', '0' .. '9']
  *
  * This function can be called from different threads in order to parallelize
  * the computations and get the results faster. When called from multiple
  * threads, the batches are distributed among all workers based on the modulo
- * of the serial's year (year % batch_max == batch_i).
+ * of the serial's year (year % batch_max == batch_i). This means than a user
+ * should not start more threads than there are years to be computed. Otherwise
+ * exceeding threads will not be able to cooperate on the computation.
+ *
  */
 static void
 compute_serials (ThreadCtx *ctx) {
