@@ -391,7 +391,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 				);
 			}
 			else {
-				printf("Matched SSID %s, key: %s\n", router->ssid, sha1_hex);
+				printf("Matched SSID %s, key: %s, serial: %s\n", router->ssid, sha1_hex, serial);
 			}
 			if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 		}
