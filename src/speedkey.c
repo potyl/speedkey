@@ -378,35 +378,37 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 			/* The SSID is smaller than the first SSID to match, no need to continute */
 			return;
 		}
-		else if (cmp == 0) {
-
-			/* The key is in the first 5 bytes of the SHA1 when converted to hex */
-			if (! is_key_computed) {
-				pos = 0;
-				for (i = 0; i < 5; ++i) {
-					unsigned char c = sha1_bin[i];
-					WRITE_HEX(key, pos, c);
-					pos += 2;
-				}
-				key[pos] = '\0';
-				is_key_computed = 1;
-			}
-
-			if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
-			if (ctx->debian_format) {
-				printf(
-					"iface speedkey inet dhcp\n"
-					"\twpa-ssid       %s%s\n"
-					"\twpa-passphrase %s\n",
-					router->type, router->ssid,
-					key
-				);
-			}
-			else {
-				printf("Matched SSID %s, key: %s, serial: %s\n", router->ssid, key, serial);
-			}
-			if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
+		else if (cmp) {
+			/* No match */
+			continue;
 		}
+
+		/* The key is in the first 5 bytes of the SHA1 when converted to hex */
+		if (! is_key_computed) {
+			pos = 0;
+			for (i = 0; i < 5; ++i) {
+				unsigned char c = sha1_bin[i];
+				WRITE_HEX(key, pos, c);
+				pos += 2;
+			}
+			key[pos] = '\0';
+			is_key_computed = 1;
+		}
+
+		if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
+		if (ctx->debian_format) {
+			printf(
+				"iface speedkey inet dhcp\n"
+				"\twpa-ssid       %s%s\n"
+				"\twpa-passphrase %s\n",
+				router->type, router->ssid,
+				key
+			);
+		}
+		else {
+			printf("Matched SSID %s, key: %s, serial: %s\n", router->ssid, key, serial);
+		}
+		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 	}
 }
 
