@@ -1,3 +1,9 @@
+0.0.13 Sun Aug 22 21:52:59 CEST 2010
+	- Build process is now more compatible with OS X.
+	- Display the serial number of the router.
+	- When doing multiple SSID lookups, the entries are first sorted.
+	- Split the SSID and key buffers in two buffers.
+
 0.0.12 Thu Aug 19 22:07:52 CEST 2010
 	- Speed improvement: transform the bytes to hex through an array lookup.
 
