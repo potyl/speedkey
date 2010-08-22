@@ -181,11 +181,6 @@ main (int argc , char * const argv[]) {
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 1) {
-		printf("Usage: SSID...\n");
-		return 1;
-	}
-
 	routers = parse_router_arg(argc, argv);
 	if (routers == NULL) {
 		printf("Usage: SSID...\n");
@@ -430,6 +425,10 @@ parse_router_arg (int argc , char * const argv[]) {
 
 	WifiRouter **routers;
 	int i;
+
+	if (argc < 1) {
+		return NULL;
+	}
 
 	routers = (WifiRouter **) malloc((argc + 1) * sizeof(WifiRouter *));
 	if (routers == NULL) {
