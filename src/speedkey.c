@@ -100,6 +100,9 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len);
 static void*
 start_thread (void *data);
 
+static int
+sort_compare (const void *p1, const void *p2);
+
 static WifiRouter**
 parse_router_arg (int argc , char * const argv[]);
 
@@ -370,10 +373,17 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 
 	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
+		int cmp;
+
 		ssid = &ctx->sha1_ssid[ctx->max_ssid_len - router->ssid_len];
 
 		/* If this is the desired SSID then we compute the key */
-		if (strcmp(ssid, router->ssid) == 0) {
+		cmp = strcmp(ssid, router->ssid);
+		if (cmp < 0) {
+			/* The SSID is smaller than the first SSID to match, no need to continute */
+			return;
+		}
+		else if (cmp == 0) {
 
 			/* The key is in the first 5 bytes of the SHA1 when converted to hex */
 			if (! is_key_computed) {
@@ -406,6 +416,15 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 }
 
 
+static int
+sort_compare (const void *p1, const void *p2) {
+	return strcmp(
+		*((const char **)p1),
+		*((const char **)p2)
+	);
+}
+
+
 static WifiRouter**
 parse_router_arg (int argc , char * const argv[]) {
 
@@ -417,6 +436,8 @@ parse_router_arg (int argc , char * const argv[]) {
 		return NULL;
 	}
 	routers[argc] = NULL;
+
+	qsort((void *) argv, argc, sizeof argv[0], sort_compare);
 
 	for (i = 0; i < argc; ++i) {
 		const char *arg;
