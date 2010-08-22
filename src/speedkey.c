@@ -86,7 +86,7 @@ struct _ThreadCtx {
 	unsigned int debian_format;
 	WifiRouter **routers;
 	size_t max_ssid_len;
-	char sha1_hex [SHA1_DIGEST_HEX_BYTES  + 1];
+	char *sha1_ssid;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -225,7 +225,7 @@ main (int argc , char * const argv[]) {
 			ctx->mutex = &mutex;
 			ctx->routers = routers;
 			ctx->max_ssid_len = max_ssid_len;
-			memset(ctx->sha1_hex, 0, sizeof(ctx->sha1_hex));
+			ctx->sha1_ssid = calloc(max_ssid_len + 1, sizeof(char));
 			pthread_create(&ctx->tid, &attr, start_thread, ctx);
 		}
 
@@ -235,6 +235,7 @@ main (int argc , char * const argv[]) {
 			ThreadCtx *ctx = &threads[i];
 			void *value = NULL;
 			pthread_join(ctx->tid, &value);
+			free(ctx->sha1_ssid);
 		}
 		pthread_mutex_destroy(&mutex);
 		free(threads);
@@ -250,8 +251,9 @@ main (int argc , char * const argv[]) {
 		ctx.mutex = NULL;
 		ctx.routers = routers;
 		ctx.max_ssid_len = max_ssid_len;
-		memset(ctx.sha1_hex, 0, sizeof(ctx.sha1_hex));
+		ctx.sha1_ssid = calloc(max_ssid_len + 1, sizeof(char));
 		compute_serials(&ctx);
+		free(ctx.sha1_ssid);
 	}
 
 	/* Cleanup */
@@ -346,8 +348,9 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	size_t i;
 	char *ssid;
 	WifiRouter **routers_iter;
-	char start_computed = 0;
+	char is_key_computed = 0;
 	size_t pos = 0;
+	char key [11];
 
 	/* Will hold the SHA1 in binary format */
 	unsigned char sha1_bin [SHA1_DIGEST_BIN_BYTES];
@@ -357,30 +360,31 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	SHA1(SHA1_BUFFER_TYPE(serial), len - 1, sha1_bin);
 
 	/* The SSID is in the last bytes of the SHA1 when converted to hex */
+	pos = 0;
 	for (i = SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
 		unsigned char c = sha1_bin[i];
-		pos = i * 2;
-		WRITE_HEX(ctx->sha1_hex, pos, c);
+		WRITE_HEX(ctx->sha1_ssid, pos, c);
+		pos += 2;
 	}
-	ctx->sha1_hex[pos + 3] = '\0';
+	ctx->sha1_ssid[pos] = '\0';
 
 	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
-		ssid = &ctx->sha1_hex[SHA1_DIGEST_HEX_BYTES - router->ssid_len];
+		ssid = &ctx->sha1_ssid[ctx->max_ssid_len - router->ssid_len];
 
 		/* If this is the desired SSID then we compute the key */
 		if (strcmp(ssid, router->ssid) == 0) {
 
 			/* The key is in the first 5 bytes of the SHA1 when converted to hex */
-			if (! start_computed) {
+			if (! is_key_computed) {
 				pos = 0;
 				for (i = 0; i < 5; ++i) {
 					unsigned char c = sha1_bin[i];
-					WRITE_HEX(ctx->sha1_hex, pos, c);
+					WRITE_HEX(key, pos, c);
 					pos += 2;
 				}
-				ctx->sha1_hex[pos] = '\0';
-				start_computed = 1;
+				key[pos] = '\0';
+				is_key_computed = 1;
 			}
 
 			if (ctx->mutex != NULL) pthread_mutex_lock(ctx->mutex);
@@ -390,11 +394,11 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 					"\twpa-ssid       %s%s\n"
 					"\twpa-passphrase %s\n",
 					router->type, router->ssid,
-					ctx->sha1_hex
+					key
 				);
 			}
 			else {
-				printf("Matched SSID %s, key: %s, serial: %s\n", router->ssid, ctx->sha1_hex, serial);
+				printf("Matched SSID %s, key: %s, serial: %s\n", router->ssid, key, serial);
 			}
 			if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 		}
