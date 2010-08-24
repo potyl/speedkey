@@ -91,7 +91,6 @@ struct _ThreadCtx {
 	unsigned int debian_format;
 	WifiRouter **routers;
 	size_t max_ssid_len;
-	char *sha1_ssid;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -195,8 +194,8 @@ main (int argc , char * const argv[]) {
 	/* Get the legnth of the biggest SSID to parse */
 	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
-		if (max_ssid_len < router->hex_ssid_len) {
-			max_ssid_len = router->hex_ssid_len;
+		if (max_ssid_len < router->bin_ssid_len) {
+			max_ssid_len = router->bin_ssid_len;
 		}
 	}
 
@@ -228,7 +227,6 @@ main (int argc , char * const argv[]) {
 			ctx->mutex = &mutex;
 			ctx->routers = routers;
 			ctx->max_ssid_len = max_ssid_len;
-			ctx->sha1_ssid = calloc(max_ssid_len + 1, sizeof(char));
 			pthread_create(&ctx->tid, &attr, start_thread, ctx);
 		}
 
@@ -238,7 +236,6 @@ main (int argc , char * const argv[]) {
 			ThreadCtx *ctx = &threads[i];
 			void *value = NULL;
 			pthread_join(ctx->tid, &value);
-			free(ctx->sha1_ssid);
 		}
 		pthread_mutex_destroy(&mutex);
 		free(threads);
@@ -254,9 +251,7 @@ main (int argc , char * const argv[]) {
 		ctx.mutex = NULL;
 		ctx.routers = routers;
 		ctx.max_ssid_len = max_ssid_len;
-		ctx.sha1_ssid = calloc(max_ssid_len + 1, sizeof(char));
 		compute_serials(&ctx);
-		free(ctx.sha1_ssid);
 	}
 
 	/* Cleanup */
@@ -366,7 +361,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		int cmp;
 
 		/* The SSID is in the last bytes of the SHA1 when converted to hex */
-		ssid_ptr = &sha1_bin[SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2];
+		ssid_ptr = &sha1_bin[SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len];
 
 		/* If this is the desired SSID then we compute the key */
 		cmp = bcmp(ssid_ptr, router->bin_ssid, router->bin_ssid_len);
