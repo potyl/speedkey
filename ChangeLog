@@ -1,3 +1,6 @@
+0.0.14 Tue Aug 24 09:30:12 CEST 2010
+	- Compare the SSIDs in binary form.
+
 0.0.13 Sun Aug 22 21:52:59 CEST 2010
 	- Build process is now more compatible with OS X.
 	- Display the serial number of the router.
