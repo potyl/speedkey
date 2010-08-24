@@ -470,6 +470,10 @@ parse_router_arg (int argc , char * const argv[]) {
 
 		/* Make sure that the target SSID is in upper case */
 		hex_ssid_len = strlen(ssid);
+		if (hex_ssid_len % 2) {
+			printf("Odd number of characters in SSID '%s' (%d)\n", arg, (int) hex_ssid_len);
+			exit(1);
+		}
 		router->bin_ssid_len = hex_ssid_len / 2;
 		router->hex_ssid = malloc(hex_ssid_len + 1);
 		router->bin_ssid = malloc(router->bin_ssid_len);
