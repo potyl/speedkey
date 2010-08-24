@@ -69,9 +69,14 @@
 		} \
 	} while (0)
 
+#define HEX_TO_BYTE(h) ((h) >= 'A' && (h) <= 'F' ? (h) - 'A' + 10 : (h) - '0')
+
+
 struct _WifiRouter {
-	char *ssid;
-	size_t ssid_len;
+	char *hex_ssid;
+	unsigned char *bin_ssid;
+	size_t bin_ssid_len;
+	size_t hex_ssid_len;
 	const char *type;
 };
 typedef struct _WifiRouter WifiRouter;
@@ -190,8 +195,8 @@ main (int argc , char * const argv[]) {
 	/* Get the legnth of the biggest SSID to parse */
 	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
-		if (max_ssid_len < router->ssid_len) {
-			max_ssid_len = router->ssid_len;
+		if (max_ssid_len < router->hex_ssid_len) {
+			max_ssid_len = router->hex_ssid_len;
 		}
 	}
 
@@ -257,7 +262,8 @@ main (int argc , char * const argv[]) {
 	/* Cleanup */
 	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
-		free(router->ssid);
+		free(router->hex_ssid);
+		free(router->bin_ssid);
 		free(router);
 	}
 	free(routers);
@@ -343,11 +349,8 @@ compute_serials (ThreadCtx *ctx) {
  */
 static void
 process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
-	size_t i;
-	char *ssid;
 	WifiRouter **routers_iter;
 	char is_key_computed = 0;
-	size_t pos = 0;
 	char key [11];
 
 	/* Will hold the SHA1 in binary format */
@@ -357,35 +360,29 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 	   key which is derived from its SHA1. */
 	SHA1(SHA1_BUFFER_TYPE(serial), len - 1, sha1_bin);
 
-	/* The SSID is in the last bytes of the SHA1 when converted to hex */
-	pos = 0;
-	for (i = SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2; i < SHA1_DIGEST_BIN_BYTES; ++i) {
-		unsigned char c = sha1_bin[i];
-		WRITE_HEX(ctx->sha1_ssid, pos, c);
-		pos += 2;
-	}
-	ctx->sha1_ssid[pos] = '\0';
-
 	for (routers_iter = ctx->routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
+		unsigned char *ssid_ptr;
 		int cmp;
 
-		ssid = &ctx->sha1_ssid[ctx->max_ssid_len - router->ssid_len];
+		/* The SSID is in the last bytes of the SHA1 when converted to hex */
+		ssid_ptr = &sha1_bin[SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len/2];
 
 		/* If this is the desired SSID then we compute the key */
-		cmp = strcmp(ssid, router->ssid);
+		cmp = bcmp(ssid_ptr, router->bin_ssid, router->bin_ssid_len);
 		if (cmp < 0) {
 			/* The SSID is smaller than the first SSID to match, no need to continute */
 			return;
 		}
 		else if (cmp) {
-			/* No match */
+			/* No match, try the next router */
 			continue;
 		}
 
 		/* The key is in the first 5 bytes of the SHA1 when converted to hex */
 		if (! is_key_computed) {
-			pos = 0;
+			size_t i;
+			size_t pos = 0;
 			for (i = 0; i < 5; ++i) {
 				unsigned char c = sha1_bin[i];
 				WRITE_HEX(key, pos, c);
@@ -401,12 +398,12 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 				"iface speedkey inet dhcp\n"
 				"\twpa-ssid       %s%s\n"
 				"\twpa-passphrase %s\n",
-				router->type, router->ssid,
+				router->type, router->hex_ssid,
 				key
 			);
 		}
 		else {
-			printf("Matched SSID %s, key: %s, serial: %s\n", router->ssid, key, serial);
+			printf("Matched SSID %s, key: %s, serial: %s\n", router->hex_ssid, key, serial);
 		}
 		if (ctx->mutex != NULL) pthread_mutex_unlock(ctx->mutex);
 	}
@@ -445,6 +442,7 @@ parse_router_arg (int argc , char * const argv[]) {
 		WifiRouter *router;
 		const char *ssid;
 		size_t j;
+		size_t offset = 0;
 
 		arg = argv[i];
 		routers[i] = router = (WifiRouter *) malloc(sizeof(WifiRouter));
@@ -456,14 +454,16 @@ parse_router_arg (int argc , char * const argv[]) {
 		router->type = "SpeedTouch";
 		ssid = strcasestr(arg, router->type);
 		if (ssid) {
-			ssid += strlen(router->type);
+			offset = strlen(router->type);
+			ssid += offset;
 		}
 
 		if (ssid == NULL) {
 			router->type = "Thomson";
 			ssid = strcasestr(arg, router->type);
 			if (ssid) {
-				ssid += strlen(router->type);
+				offset = strlen(router->type);
+				ssid += offset;
 			}
 		}
 
@@ -473,14 +473,31 @@ parse_router_arg (int argc , char * const argv[]) {
 		}
 
 		/* Make sure that the target SSID is in upper case */
-		router->ssid_len = strlen(ssid);
-		router->ssid = malloc(router->ssid_len + 1);
+		router->hex_ssid_len = strlen(ssid);
+		router->bin_ssid_len = router->hex_ssid_len / 2;
+		router->hex_ssid = malloc(router->hex_ssid_len + 1);
+		router->bin_ssid = malloc(router->bin_ssid_len);
 
-		for (j = 0; j < router->ssid_len; ++j) {
-			router->ssid[j] = toupper((unsigned char) ssid[j]);
+		for (j = 0; j < router->hex_ssid_len; ++j) {
+			char c = toupper((unsigned char) ssid[j]);
+			router->hex_ssid[j] = c;
+			if ( !  ( (c >= '0' &&  c <= '9') || (c >= 'A' && c <= 'F') )  ) {
+				printf("Invalid character '%c' at position %i in SSID %s\n", c, (int) (offset + j + 1), arg);
+				exit(1);
+			}
 		}
-		router->ssid[router->ssid_len] = '\0';
+		router->hex_ssid[router->hex_ssid_len] = '\0';
+
+		/* Transform the SSIDs into binary, this will make for faster lookups */
+		for (j = 0; j < router->bin_ssid_len; ++j) {
+			size_t pos = j * 2;
+			router->bin_ssid[j] =
+				  (HEX_TO_BYTE(router->hex_ssid[pos]) << 4)
+				| (HEX_TO_BYTE(router->hex_ssid[pos + 1]))
+			;
+		}
 	}
 
 	return routers;
 }
+
