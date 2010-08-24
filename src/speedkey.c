@@ -76,7 +76,6 @@ struct _WifiRouter {
 	char *hex_ssid;
 	unsigned char *bin_ssid;
 	size_t bin_ssid_len;
-	size_t hex_ssid_len;
 	const char *type;
 };
 typedef struct _WifiRouter WifiRouter;
@@ -438,6 +437,8 @@ parse_router_arg (int argc , char * const argv[]) {
 		const char *ssid;
 		size_t j;
 		size_t offset = 0;
+		size_t hex_ssid_len;
+
 
 		arg = argv[i];
 		routers[i] = router = (WifiRouter *) malloc(sizeof(WifiRouter));
@@ -468,12 +469,12 @@ parse_router_arg (int argc , char * const argv[]) {
 		}
 
 		/* Make sure that the target SSID is in upper case */
-		router->hex_ssid_len = strlen(ssid);
-		router->bin_ssid_len = router->hex_ssid_len / 2;
-		router->hex_ssid = malloc(router->hex_ssid_len + 1);
+		hex_ssid_len = strlen(ssid);
+		router->bin_ssid_len = hex_ssid_len / 2;
+		router->hex_ssid = malloc(hex_ssid_len + 1);
 		router->bin_ssid = malloc(router->bin_ssid_len);
 
-		for (j = 0; j < router->hex_ssid_len; ++j) {
+		for (j = 0; j < hex_ssid_len; ++j) {
 			char c = toupper((unsigned char) ssid[j]);
 			router->hex_ssid[j] = c;
 			if ( !  ( (c >= '0' &&  c <= '9') || (c >= 'A' && c <= 'F') )  ) {
@@ -481,7 +482,7 @@ parse_router_arg (int argc , char * const argv[]) {
 				exit(1);
 			}
 		}
-		router->hex_ssid[router->hex_ssid_len] = '\0';
+		router->hex_ssid[hex_ssid_len] = '\0';
 
 		/* Transform the SSIDs into binary, this will make for faster lookups */
 		for (j = 0; j < router->bin_ssid_len; ++j) {
