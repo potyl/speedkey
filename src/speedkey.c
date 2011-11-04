@@ -363,7 +363,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		ssid_ptr = &sha1_bin[SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len];
 
 		/* If this is the desired SSID then we compute the key */
-		cmp = bcmp(ssid_ptr, router->bin_ssid, router->bin_ssid_len);
+		cmp = memcmp(ssid_ptr, router->bin_ssid, router->bin_ssid_len);
 		if (cmp < 0) {
 			/* The SSID is smaller than the first SSID to match, no need to continue */
 			return;
