@@ -282,7 +282,7 @@ start_thread (void *data) {
  * there's no heuristic than can help.
  *
  * The serial number is assumed to be in the following format:
- *   CP$(YY)$(WW)--$(P1)$(P2)$(P3)  ex: CP0923H3FHE
+ *   CP$(YY)$(WW)--$(P1)$(P2)$(P3)  ex: CP0923H3FHE2
  * Where:
  *   $(YY) is the year [04, 09]
  *   $(WW) is the week number [01, 52]
@@ -365,7 +365,7 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		/* If this is the desired SSID then we compute the key */
 		cmp = bcmp(ssid_ptr, router->bin_ssid, router->bin_ssid_len);
 		if (cmp < 0) {
-			/* The SSID is smaller than the first SSID to match, no need to continute */
+			/* The SSID is smaller than the first SSID to match, no need to continue */
 			return;
 		}
 		else if (cmp) {
