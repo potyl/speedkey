@@ -39,6 +39,8 @@
 #include "config.h"
 
 #define SERIAL_LENGTH 12
+#define SSID_BIN_LENGTH 3
+#define SSID_HEX_LENGTH SSID_BIN_LENGTH * 2
 #define SHA1_DIGEST_BITS 160
 #define SHA1_DIGEST_HEX_BYTES (SHA1_DIGEST_BITS / 4)
 #define SHA1_DIGEST_BIN_BYTES (SHA1_DIGEST_BITS / 8)
@@ -74,9 +76,8 @@
 
 struct _WifiRouter {
 	char *hex_ssid;
-	unsigned char *bin_ssid;
-	size_t bin_ssid_len;
 	const char *type;
+	unsigned char bin_ssid [SSID_BIN_LENGTH];
 };
 typedef struct _WifiRouter WifiRouter;
 
@@ -89,7 +90,6 @@ struct _ThreadCtx {
 	unsigned char year_end;
 	unsigned int debian_format;
 	WifiRouter **routers;
-	size_t max_ssid_len;
 };
 typedef struct _ThreadCtx ThreadCtx;
 
@@ -131,7 +131,6 @@ main (int argc , char * const argv[]) {
 	unsigned char year_end = 0;
 	WifiRouter **routers = NULL;
 	WifiRouter **routers_iter;
-	size_t max_ssid_len = 0;
 
 	struct option longopts[] = {
 		{ "year-start", required_argument, NULL, 's' },
@@ -190,13 +189,6 @@ main (int argc , char * const argv[]) {
 		return 1;
 	}
 
-	/* Get the legnth of the biggest SSID to parse */
-	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
-		WifiRouter *router = *routers_iter;
-		if (max_ssid_len < router->bin_ssid_len) {
-			max_ssid_len = router->bin_ssid_len;
-		}
-	}
 
 	/* Set the current year as the last year for the serial codes to generate */
 	if (!year_end) {
@@ -225,7 +217,6 @@ main (int argc , char * const argv[]) {
 			ctx->debian_format = debian_format;
 			ctx->mutex = &mutex;
 			ctx->routers = routers;
-			ctx->max_ssid_len = max_ssid_len;
 			pthread_create(&ctx->tid, &attr, start_thread, ctx);
 		}
 
@@ -249,7 +240,6 @@ main (int argc , char * const argv[]) {
 		ctx.debian_format = debian_format;
 		ctx.mutex = NULL;
 		ctx.routers = routers;
-		ctx.max_ssid_len = max_ssid_len;
 		compute_serials(&ctx);
 	}
 
@@ -257,7 +247,6 @@ main (int argc , char * const argv[]) {
 	for (routers_iter = routers; *routers_iter != NULL; ++routers_iter) {
 		WifiRouter *router = *routers_iter;
 		free(router->hex_ssid);
-		free(router->bin_ssid);
 		free(router);
 	}
 	free(routers);
@@ -360,10 +349,10 @@ process_serial (ThreadCtx *ctx, const char *serial, size_t len) {
 		int cmp;
 
 		/* The SSID is in the last bytes of the SHA1 when converted to hex */
-		ssid_ptr = &sha1_bin[SHA1_DIGEST_BIN_BYTES - ctx->max_ssid_len];
+		ssid_ptr = &sha1_bin[SHA1_DIGEST_BIN_BYTES - SSID_BIN_LENGTH];
 
 		/* If this is the desired SSID then we compute the key */
-		cmp = memcmp(ssid_ptr, router->bin_ssid, router->bin_ssid_len);
+		cmp = memcmp(ssid_ptr, router->bin_ssid, SSID_BIN_LENGTH);
 		if (cmp < 0) {
 			/* The SSID is smaller than the first SSID to match, no need to continue */
 			return;
@@ -468,16 +457,15 @@ parse_router_arg (int argc , char * const argv[]) {
 			router->type = "SpeedTouch";
 		}
 
-		/* Make sure that the target SSID is in upper case */
 		hex_ssid_len = strlen(ssid);
-		if (hex_ssid_len % 2) {
-			printf("Odd number of characters in SSID '%s' (%d)\n", arg, (int) hex_ssid_len);
+		if (hex_ssid_len != SSID_BIN_LENGTH * 2) {
+			printf("SSID '%s' must have %d characters only; got %d\n", arg, SSID_BIN_LENGTH, (int) hex_ssid_len);
 			exit(1);
 		}
-		router->bin_ssid_len = hex_ssid_len / 2;
 		router->hex_ssid = malloc(hex_ssid_len + 1);
-		router->bin_ssid = malloc(router->bin_ssid_len);
+		memset(router->bin_ssid, 0, SSID_BIN_LENGTH);
 
+		/* Make sure that the target SSID is in upper case */
 		for (j = 0; j < hex_ssid_len; ++j) {
 			char c = toupper((unsigned char) ssid[j]);
 			router->hex_ssid[j] = c;
@@ -489,7 +477,7 @@ parse_router_arg (int argc , char * const argv[]) {
 		router->hex_ssid[hex_ssid_len] = '\0';
 
 		/* Transform the SSIDs into binary, this will make for faster lookups */
-		for (j = 0; j < router->bin_ssid_len; ++j) {
+		for (j = 0; j < SSID_BIN_LENGTH; ++j) {
 			size_t pos = j * 2;
 			router->bin_ssid[j] =
 				  (HEX_TO_BYTE(router->hex_ssid[pos]) << 4)
